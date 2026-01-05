@@ -1,0 +1,144 @@
+Project Codename: "ExpenseLens"
+1. High-Level Architecture
+This is a solid, modern stack. Here’s how the components will interact:
+
++----------------+      (HTTPS API Calls)     +------------------+      (PDF Parsing, DB Ops)     +------------------+
+| User's Browser | <------------------------> |  FastAPI Backend | <----------------------------> | MongoDB Atlas    |
+| (React App)    |                            |  (on a Server)   |                                | (Cloud Database) |
++----------------+                            +------------------+                                +------------------+
+       ^                                              |
+       | (User uploads PDF)                           | (Processes file)
+       |                                              |
+       +----------------------------------------------+
+2. Detailed Component Breakdown
+Frontend (React + Tailwind CSS)
+We'll structure this using a component-based architecture.
+
+Pages/Views:
+
+LandingPage: A simple, elegant page for non-logged-in users explaining the feature.
+
+LoginPage / SignupPage: Forms for user authentication.
+
+Dashboard: This is the main view for a logged-in user. It will be the central hub containing:
+
+An "Upload PDF" component.
+
+Key metrics (Total spending this month, top category, etc.).
+
+Chart components.
+
+ProfilePage: To display and manage user details.
+
+Core Components:
+
+Navbar: For navigation, showing user status and a logout button.
+
+FileUpload: A drag-and-drop or simple file input component for the payment history PDF. We should add loading states and error handling here.
+
+ChartComponent: Reusable components for different visualizations (e.g., Pie chart for category breakdown, Bar chart for monthly spending). We'll use a library like Chart.js (react-chartjs-2) or Recharts for this.
+
+State Management: For a project of this size, React's built-in Context API with useReducer should be sufficient to manage global state like user authentication and transaction data.
+
+Backend (FastAPI)
+This will be the brain of our application. FastAPI's performance and automatic docs will be great for us.
+
+PDF Parsing Module:
+
+This is the most critical and challenging part. We'll need a robust Python library like pdfplumber or PyPDF2 to extract text from the PhonePe-generated PDFs.
+
+We will need to use Regular Expressions (regex) to identify and extract key information for each transaction: Date, Merchant Name/Description, Amount, and Transaction ID. We must make this parser resilient to minor format changes in the PDF.
+
+API Endpoints:
+
+Authentication (/auth):
+
+/signup (POST): Create a new user. We'll use passlib to hash passwords.
+
+/login (POST): Authenticate a user and return a JWT (JSON Web Token) for session management.
+
+Users (/users):
+
+/me (GET): Get the current logged-in user's profile details (protected endpoint).
+
+Transactions (/transactions):
+
+/upload (POST): This endpoint will accept a .pdf file. It will save the file, trigger the parsing module, extract all transactions, and save them to the database, linking them to the user ID. This should be an async operation. For large files, we might even consider a background worker (like Celery).
+
+/ (GET): Fetch all transactions for the logged-in user, with options for filtering by date range or category.
+
+Analytics (/analytics):
+
+/summary-by-category (GET): Aggregates spending data from the DB and returns it in a format perfect for a pie chart.
+
+/monthly-trend (GET): Aggregates spending data by month and returns it for a bar chart.
+
+Database (MongoDB Atlas)
+MongoDB's flexible, document-based structure is perfect for this. We'll define two main collections:
+
+users collection:
+
+JSON
+
+{
+  "_id": ObjectId("..."),
+  "email": "user@example.com",
+  "hashed_password": "...",
+  "full_name": "User Name",
+  "created_at": ISODate("...")
+}
+transactions collection:
+
+JSON
+
+{
+  "transaction_date": "2025-09-16T16:55:00",
+  "description": "Refund from MEESHO TECHNOLOGIES PRIVATE LIMITED",
+  "amount": 234.00,
+  "type": "CREDIT",
+  "category": "Refund", // Default category for now
+  "transaction_id": "T2509161655081188364760",
+  "utr_number": "525973216821"
+}
+
+Project Roadmap (Phased Approach)
+Let's build this iteratively.
+
+Phase 1: Foundation & The Core Parser (1-2 Sprints)
+
+Setup: Initialize Git repos (frontend/backend), set up MongoDB Atlas cluster, and establish CI/CD pipelines.
+
+Backend - Auth: Implement the /auth/signup and /auth/login endpoints with JWT.
+
+Backend - PDF Parser Spike: This is a research task. Take 5-10 different sample payment history PDFs and build a Python script that can reliably parse them. This is the highest-risk part of the project, so we tackle it first.
+
+Backend - Upload Endpoint: Create the /transactions/upload endpoint that uses the parser from step 3 and saves the data to MongoDB.
+
+Phase 2: Frontend Integration & Basic Visualization (2 Sprints)
+
+Frontend - Scaffolding: Set up the React project with Tailwind CSS and routing.
+
+Frontend - Auth: Build the Login/Signup pages and integrate them with the backend. Implement state management for the user's token.
+
+Frontend - Dashboard: Create the main dashboard layout and the PDF upload component.
+
+End-to-End Flow: Achieve the first major milestone: A user can sign up, log in, upload a PDF, and we can confirm the transactions are in the database.
+
+Phase 3: Data Visualization & Polish (2 Sprints)
+
+Backend - Analytics Endpoints: Build the aggregation endpoints (/analytics/...).
+
+Frontend - Charts: Integrate Chart.js/Recharts into the dashboard to visualize the data from the new analytics endpoints.
+
+Frontend - Transaction List: Add a view to see a detailed, paginated list of all transactions.
+
+Frontend - Profile Page: Build the user profile section.
+
+4. Key Challenges & Considerations
+PDF Format Changes: The biggest risk. If the team that generates the payment history PDF changes its format, our parser will break. We need to have robust error handling and logging in place to detect parsing failures immediately.
+
+Auto-Categorization: How do we categorize a transaction like "Zomato" as "Food"? We can start with a simple dictionary-based mapping (e.g., {'zomato': 'Food', 'uber': 'Transport'}) and potentially evolve to a more intelligent system later.
+
+Security: Ensure secure file handling on the backend to prevent malicious uploads. All endpoints handling user data must be protected and require a valid JWT.
+
+Performance: For users with very long transaction histories, the PDF could be large. The upload and parsing process should provide feedback to the user and not block the UI. As mentioned, an async worker queue might be necessary for scale.

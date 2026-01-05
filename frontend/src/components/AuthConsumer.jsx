@@ -1,4 +1,4 @@
-import DashboardPage from "./Pages/DashboardPage";
+import DashboardPage from "./DashboardPage/DashboardPage";
 import LoginPage from "./Pages/LoginPage";
 import SignupPage from "./Pages/SignUpPage";
 import useAuth from "./useAuth";
