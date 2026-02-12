@@ -1,3 +1,4 @@
+// src/pages/LandingPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   FileText,
@@ -13,11 +14,23 @@ import {
   BarChart3,
   Sparkles,
 } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import useAuth from "../hooks/useAuth";
 
 // Navbar Component
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,20 +50,21 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <div className="relative group cursor-pointer">
-              {" "}
-              {/* Ensure 'group' is on parent */}
-              {/* Glow Effect */}
+          {/* Logo */}
+          <div 
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-3 group cursor-pointer"
+          >
+            <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-xl blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
-              {/* Eye Icon with Blink Animation */}
-              <Eye className="w-10 h-10 text-[#00C4B4] relative group-hover:animate-blink transition-colors duration-300" />
+              <Eye className="w-10 h-10 text-[#00C4B4] relative transition-colors duration-300" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-[#00C4B4] via-[#5EE0D9] to-[#00C4B4] bg-clip-text text-transparent">
               ExpenseLens
             </span>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <a
               href="#features"
@@ -64,17 +78,23 @@ const Navbar = () => {
             >
               How It Works
             </a>
-            <a
-              href="#testimonials"
-              className="text-gray-300 hover:text-[#00C4B4] transition-all duration-300 hover:scale-110"
+            {isAuthenticated && (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-gray-300 hover:text-[#00C4B4] transition-all duration-300 hover:scale-110"
+              >
+                Dashboard
+              </button>
+            )}
+            <button 
+              onClick={handleGetStarted}
+              className="px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300"
             >
-              Testimonials
-            </a>
-            <button className="px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300">
-              Get Started
+              {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             </button>
           </div>
 
+          {/* Mobile Menu Button */}
           <button
             className="md:hidden text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -88,29 +108,43 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-900/95 backdrop-blur-lg border-t border-[#00C4B4]/20">
           <div className="px-4 py-6 space-y-4">
             <a
               href="#features"
+              onClick={() => setMobileMenuOpen(false)}
               className="block text-gray-300 hover:text-[#00C4B4] transition-colors"
             >
               Features
             </a>
             <a
               href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
               className="block text-gray-300 hover:text-[#00C4B4] transition-colors"
             >
               How It Works
             </a>
-            <a
-              href="#testimonials"
-              className="block text-gray-300 hover:text-[#00C4B4] transition-colors"
+            {isAuthenticated && (
+              <button
+                onClick={() => {
+                  navigate('/dashboard');
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-gray-300 hover:text-[#00C4B4] transition-colors"
+              >
+                Dashboard
+              </button>
+            )}
+            <button 
+              onClick={() => {
+                handleGetStarted();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold"
             >
-              Testimonials
-            </a>
-            <button className="w-full px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold">
-              Get Started
+              {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             </button>
           </div>
         </div>
@@ -137,10 +171,27 @@ const FloatingElement = ({ children, delay = 0, className = "" }) => {
 // Hero Section Component
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  const handleUploadClick = () => {
+    if (isAuthenticated) {
+      navigate('/transactions');
+    } else {
+      navigate('/signup');
+    }
+  };
+
+  const handleDemoClick = () => {
+    // Scroll to features section
+    document.getElementById('features')?.scrollIntoView({ 
+      behavior: 'smooth' 
+    });
+  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -156,6 +207,7 @@ const HeroSection = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Text Content */}
           <div
             className={`transform transition-all duration-1000 ${
               isVisible
@@ -185,14 +237,20 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="group px-8 py-4 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2">
+              <button 
+                onClick={handleUploadClick}
+                className="group px-8 py-4 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
+              >
                 <Upload className="w-5 h-5" />
-                <span>Upload PDF Now</span>
+                <span>{isAuthenticated ? 'Upload PDF Now' : 'Get Started Free'}</span>
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <button className="px-8 py-4 bg-white/5 backdrop-blur-lg border border-[#C2F0E7]/30 rounded-full text-white font-semibold hover:bg-[#C2F0E7]/10 hover:border-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300">
-                Watch Demo
+              <button 
+                onClick={handleDemoClick}
+                className="px-8 py-4 bg-white/5 backdrop-blur-lg border border-[#C2F0E7]/30 rounded-full text-white font-semibold hover:bg-[#C2F0E7]/10 hover:border-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300"
+              >
+                View Features
               </button>
             </div>
 
@@ -215,6 +273,7 @@ const HeroSection = () => {
             </div>
           </div>
 
+          {/* Right Column - Dashboard Preview */}
           <div
             className={`relative transform transition-all duration-1000 delay-300 ${
               isVisible
@@ -447,6 +506,17 @@ const FeaturesSection = () => {
 
 // CTA Section Component
 const CTASection = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handleStartClick = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="relative py-32 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
       <div className="absolute inset-0">
@@ -465,8 +535,11 @@ const CTASection = () => {
           with ExpenseLens
         </p>
 
-        <button className="group px-10 py-5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white text-lg font-bold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 inline-flex items-center space-x-3">
-          <span>Start Analyzing Now</span>
+        <button 
+          onClick={handleStartClick}
+          className="group px-10 py-5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white text-lg font-bold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 inline-flex items-center space-x-3"
+        >
+          <span>{isAuthenticated ? 'Go to Dashboard' : 'Start Analyzing Now'}</span>
           <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
         </button>
 

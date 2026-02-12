@@ -1,0 +1,319 @@
+// src/pages/SignupPage.jsx
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
+import { Mail, Lock, User, Eye, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
+
+const SignupPage = () => {
+  const { signup, loading } = useAuth();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [error, setError] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState("");
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value,
+    });
+    
+    // Clear error when user starts typing
+    if (error) setError("");
+
+    // Check password strength
+    if (id === "password") {
+      checkPasswordStrength(value);
+    }
+  };
+
+  const checkPasswordStrength = (password) => {
+    if (password.length === 0) {
+      setPasswordStrength("");
+    } else if (password.length < 6) {
+      setPasswordStrength("weak");
+    } else if (password.length < 10) {
+      setPasswordStrength("medium");
+    } else {
+      setPasswordStrength("strong");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    // Validation
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (formData.name.length < 2) {
+      setError("Name must be at least 2 characters long");
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    // Attempt signup
+    const result = await signup(formData.name, formData.email, formData.password);
+
+    if (result.success) {
+      // Redirect to dashboard on success
+      navigate("/dashboard");
+    } else {
+      // Show error message
+      setError(result.error || "Signup failed. Please try again.");
+    }
+  };
+
+  const getStrengthColor = () => {
+    switch (passwordStrength) {
+      case "weak": return "bg-red-500";
+      case "medium": return "bg-yellow-500";
+      case "strong": return "bg-green-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-br from-sky-950 via-cyan-900 to-teal-950 text-sky-100 font-sans flex items-center justify-center p-4">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Signup Card */}
+      <div className="relative w-full max-w-md">
+        <div className="bg-black/20 backdrop-blur-lg border border-sky-500/30 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-8 sm:p-10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl mb-4">
+                <Eye className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">
+                Create Account
+              </h2>
+              <p className="text-sky-300">
+                Start tracking your expenses today
+              </p>
+            </div>
+
+            {/* Error Alert */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-300 text-sm font-medium">Error</p>
+                  <p className="text-red-200 text-sm">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Signup Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Name Input */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-sky-200 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    autoComplete="name"
+                  />
+                </div>
+              </div>
+
+              {/* Email Input */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-sky-200 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-sky-200 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    autoComplete="new-password"
+                  />
+                </div>
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-2 bg-sky-900/50 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${getStrengthColor()} transition-all duration-300`}
+                          style={{ 
+                            width: passwordStrength === "weak" ? "33%" : 
+                                   passwordStrength === "medium" ? "66%" : 
+                                   passwordStrength === "strong" ? "100%" : "0%" 
+                          }}
+                        ></div>
+                      </div>
+                      <span className="text-xs text-sky-300 capitalize">{passwordStrength}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password Input */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-sky-200 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="w-5 h-5 text-sky-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Re-enter password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    disabled={loading}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    autoComplete="new-password"
+                  />
+                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-sky-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Creating account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Login Link */}
+            <div className="mt-8 text-center">
+              <p className="text-sky-200">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+                >
+                  Sign In
+                </Link>
+              </p>
+            </div>
+
+            {/* Back to Home */}
+            <div className="mt-4 text-center">
+              <Link
+                to="/"
+                className="text-sm text-sky-300 hover:text-sky-200 transition-colors"
+              >
+                ← Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default SignupPage;
