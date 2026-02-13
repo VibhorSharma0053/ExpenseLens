@@ -8,7 +8,7 @@
 [![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
 
 </div>
 
@@ -446,11 +446,6 @@ Contributions welcome! Please:
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
 
 ## 🙏 Acknowledgments
 
@@ -465,9 +460,9 @@ This project is licensed under the MIT License.
 
 ## 📞 Contact
 
-- **Email**: your.email@example.com
-- **GitHub**: [@yourusername](https://github.com/yourusername)
-- **Project**: [ExpenseLens](https://github.com/yourusername/expenselens)
+- **Email**: vibhorsharma0053@gmail.com
+- **GitHub**: [@VibhorSharma0053](https://github.com/VibhorSharma0053)
+- **Project**: [ExpenseLens](https://github.com/VibhorSharma0053/expenselens)
 
 ---
 
