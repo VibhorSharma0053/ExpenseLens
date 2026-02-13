@@ -14,6 +14,7 @@ import logging
 from pdf_parser import PhonePePDFParser, validate_transactions
 import shutil
 from pathlib import Path
+import calendar
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -152,6 +153,18 @@ class UploadResponse(BaseModel):
     message: str
     transactions_added: int
     transactions_failed: int
+    transactions_skipped: int = 0  # NEW: Count of duplicate transactions skipped
+
+class DailyTrendItem(BaseModel):
+    day: int
+    income: float
+    expense: float
+
+class DailyTrendResponse(BaseModel):
+    daily_data: List[DailyTrendItem]
+    month: int
+    year: int
+    total_transactions_in_month: int
 
 
 # ============= Utility Functions =============
@@ -195,6 +208,9 @@ def decode_token(token: str) -> Dict:
             detail="Could not validate credentials"
         )
 
+
+def get_days_in_month(year: int, month: int) -> int:
+    return calendar.monthrange(year, month)[1]
 
 # Dependency to get current user
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -368,15 +384,19 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 
 # ============= Transaction Endpoints =============
 
-@app.post("/api/transactions/upload", response_model=UploadResponse)
-async def upload_pdf(
+@app.post("/api/transactions/upload")
+async def upload_transactions(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload and parse PhonePe payment history PDF"""
-    
+    """
+    Upload PhonePe PDF with DUPLICATE DETECTION
+    - Prevents duplicate transactions by checking transaction_id and utr_number
+    - Skips transactions that already exist in the database
+    - Returns detailed statistics about added, skipped, and failed transactions
+    """
     logger.info(f"=== UPLOAD STARTED ===")
-    logger.info(f"User: {current_user['email']}")
+    logger.info(f"User: {current_user['email']} ({current_user['_id']})")
     logger.info(f"File: {file.filename}")
     
     # Validate file type
@@ -407,11 +427,12 @@ async def upload_pdf(
         
         if len(transactions) == 0:
             logger.warning("⚠️ No transactions extracted from PDF!")
-            return UploadResponse(
-                message=f"No transactions found in {file.filename}",
-                transactions_added=0,
-                transactions_failed=0
-            )
+            return {
+                "message": f"No transactions found in {file.filename}",
+                "transactions_added": 0,
+                "transactions_failed": 0,
+                "transactions_skipped": 0
+            }
         
         # Log first transaction for debugging
         if transactions:
@@ -425,59 +446,125 @@ async def upload_pdf(
         
         if len(valid_transactions) == 0:
             logger.warning("⚠️ No valid transactions after validation!")
-            return UploadResponse(
-                message=f"No valid transactions in {file.filename}",
-                transactions_added=0,
-                transactions_failed=len(transactions)
-            )
+            return {
+                "message": f"No valid transactions in {file.filename}",
+                "transactions_added": 0,
+                "transactions_failed": len(transactions),
+                "transactions_skipped": 0
+            }
         
-        # Save to database
-        logger.info(f"💾 Saving to MongoDB...")
+        # ============= DUPLICATE DETECTION =============
+        logger.info(f"🔍 Checking for existing transactions (duplicate detection)...")
+        
+        # Get all existing transaction IDs and UTR numbers for this user
+        existing_docs = await app.mongodb.transactions.find(
+            {"user_id": current_user["_id"]},
+            {"transaction_id": 1, "utr_number": 1}
+        ).to_list(None)
+        
+        # Build sets for fast lookup
+        existing_transaction_ids = set()
+        existing_utr_numbers = set()
+        
+        for doc in existing_docs:
+            txn_id = doc.get("transaction_id", "").strip()
+            utr = doc.get("utr_number", "").strip()
+            
+            if txn_id:
+                existing_transaction_ids.add(txn_id)
+            if utr:
+                existing_utr_numbers.add(utr)
+        
+        logger.info(f"📊 Found {len(existing_transaction_ids)} existing transaction IDs")
+        logger.info(f"📊 Found {len(existing_utr_numbers)} existing UTR numbers")
+        
+        # Filter out duplicates
+        new_transactions = []
+        duplicate_count = 0
+        
+        for txn in valid_transactions:
+            txn_id = txn.get("transaction_id", "").strip()
+            utr = txn.get("utr_number", "").strip()
+            
+            # Check if transaction already exists
+            is_duplicate = False
+            
+            # Method 1: Check by transaction_id (most reliable)
+            if txn_id and txn_id in existing_transaction_ids:
+                is_duplicate = True
+                logger.debug(f"Duplicate found (txn_id): {txn_id}")
+            
+            # Method 2: Check by utr_number (fallback)
+            elif utr and utr in existing_utr_numbers:
+                is_duplicate = True
+                logger.debug(f"Duplicate found (UTR): {utr}")
+            
+            if is_duplicate:
+                duplicate_count += 1
+            else:
+                new_transactions.append(txn)
+        
+        logger.info(f"📊 New transactions to add: {len(new_transactions)}")
+        logger.info(f"📊 Duplicate transactions skipped: {duplicate_count}")
+        
+        # Save ONLY new transactions to database
+        logger.info(f"💾 Saving new transactions to MongoDB...")
         added_count = 0
         failed_count = 0
         
-        for idx, txn in enumerate(valid_transactions):
+        for idx, txn in enumerate(new_transactions):
             try:
                 # Add user_id and upload metadata
                 txn_doc = {
                     **txn,
-                    "user_id": ObjectId(user_id),
+                    "user_id": current_user["_id"],
                     "uploaded_at": datetime.utcnow(),
-                    "source_file": filename
+                    "source_file": file.filename
                 }
                 
                 # Convert transaction_date string to datetime if needed
-                if isinstance(txn_doc['transaction_date'], str):
+                if isinstance(txn_doc.get('transaction_date'), str):
                     txn_doc['transaction_date'] = datetime.fromisoformat(txn_doc['transaction_date'])
                 
                 # Log first transaction being inserted
                 if idx == 0:
-                    logger.info(f"Inserting first transaction: {txn_doc}")
+                    logger.info(f"✅ Inserting first new transaction: {txn_doc.get('description', '')[:50]}")
                 
                 result = await app.mongodb.transactions.insert_one(txn_doc)
-                logger.debug(f"Inserted transaction {idx + 1}/{len(valid_transactions)} - ID: {result.inserted_id}")
-                added_count += 1
+                
+                if result.inserted_id:
+                    logger.debug(f"✅ Inserted transaction {idx + 1}/{len(new_transactions)} - ID: {result.inserted_id}")
+                    added_count += 1
+                else:
+                    logger.error(f"❌ Failed to insert transaction {idx + 1}")
+                    failed_count += 1
                 
             except Exception as e:
                 logger.error(f"❌ Error saving transaction {idx + 1}: {str(e)}")
                 logger.error(f"Transaction data: {txn}")
-                import traceback
-                logger.error(traceback.format_exc())
                 failed_count += 1
                 continue
         
-        logger.info(f"✅ Successfully saved {added_count} transactions")
+        logger.info(f"✅ Successfully saved {added_count} NEW transactions")
+        logger.info(f"⚠️ Skipped {duplicate_count} DUPLICATE transactions")
         logger.info(f"❌ Failed to save {failed_count} transactions")
         logger.info(f"=== UPLOAD COMPLETED ===")
         
-        return UploadResponse(
-            message=f"Successfully processed {file.filename}",
-            transactions_added=added_count,
-            transactions_failed=failed_count
-        )
+        # Prepare response message
+        if duplicate_count > 0:
+            message = f"Successfully processed {file.filename}. Added {added_count} new transactions, skipped {duplicate_count} duplicates."
+        else:
+            message = f"Successfully processed {file.filename}. Added {added_count} transactions."
+        
+        return {
+            "message": message,
+            "transactions_added": added_count,
+            "transactions_failed": failed_count,
+            "transactions_skipped": duplicate_count
+        }
         
     except Exception as e:
-        logger.error(f"Error processing PDF: {str(e)}", exc_info=True)
+        logger.error(f"❌ Upload error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing PDF: {str(e)}"
@@ -488,9 +575,9 @@ async def upload_pdf(
         try:
             if file_path.exists():
                 file_path.unlink()
-                logger.info(f"Cleaned up file: {file_path}")
+                logger.info(f"🗑️ Cleaned up file: {file_path}")
         except Exception as e:
-            logger.warning(f"Error cleaning up file: {str(e)}")
+            logger.warning(f"⚠️ Error cleaning up file: {str(e)}")
 
 
 @app.get("/api/transactions", response_model=TransactionListResponse)
@@ -769,6 +856,77 @@ async def get_category_breakdown(
     results = await app.mongodb.transactions.aggregate(pipeline).to_list(None)
     
     return {"categories": results}
+
+@app.get("/api/analytics/daily-trend", response_model=DailyTrendResponse)
+async def get_daily_trend(
+    month: int = Query(..., ge=1, le=12),
+    year: int = Query(..., ge=2000, le=2100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get day-by-day breakdown for a specific month"""
+    
+    # Create date range for the specific month
+    start_date = datetime(year, month, 1)
+    # Calculate end date (start of next month)
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1)
+    else:
+        end_date = datetime(year, month + 1, 1)
+        
+    pipeline = [
+        {
+            "$match": {
+                "user_id": current_user["_id"],
+                "transaction_date": {"$gte": start_date, "$lt": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "day": {"$dayOfMonth": "$transaction_date"},
+                    "type": "$type"
+                },
+                "total": {"$sum": "$amount"}
+            }
+        }
+    ]
+    
+    results = await app.mongodb.transactions.aggregate(pipeline).to_list(None)
+    
+    # Initialize all days with 0
+    days_in_month = get_days_in_month(year, month)
+    daily_map = {day: {"income": 0, "expense": 0} for day in range(1, days_in_month + 1)}
+    
+    txn_count = 0
+    
+    # Populate actual data
+    for res in results:
+        day = res["_id"]["day"]
+        txn_type = res["_id"]["type"]
+        amount = res["total"]
+        
+        if txn_type == "CREDIT":
+            daily_map[day]["income"] = amount
+        elif txn_type == "DEBIT":
+            daily_map[day]["expense"] = amount
+            
+        txn_count += 1
+
+    # Convert to list format
+    daily_data = [
+        DailyTrendItem(day=day, income=data["income"], expense=data["expense"])
+        for day, data in daily_map.items()
+    ]
+    
+    # Sort by day
+    daily_data.sort(key=lambda x: x.day)
+    
+    return DailyTrendResponse(
+        daily_data=daily_data,
+        month=month,
+        year=year,
+        total_transactions_in_month=txn_count
+    )
 
 
 # Health check

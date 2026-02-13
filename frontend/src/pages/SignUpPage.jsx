@@ -4,6 +4,16 @@ import { useNavigate, Link } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import { Mail, Lock, User, Eye, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 
+// --- Theme Constants ---
+const THEME = {
+  primary: '#6739B7', // Deep Royal Purple
+  secondary: '#9575CD', // Soft Lavender
+  background_gradient: 'from-[#6739B7] via-[#512DA8] to-[#311B92]',
+  button_gradient: 'from-[#6739B7] to-[#9575CD]',
+  accent_pink: '#E91E63',
+  accent_green: '#00C853',
+};
+
 const SignupPage = () => {
   const { signup, loading } = useAuth();
   const navigate = useNavigate();
@@ -23,10 +33,8 @@ const SignupPage = () => {
       [id]: value,
     });
     
-    // Clear error when user starts typing
     if (error) setError("");
 
-    // Check password strength
     if (id === "password") {
       checkPasswordStrength(value);
     }
@@ -48,7 +56,6 @@ const SignupPage = () => {
     e.preventDefault();
     setError("");
 
-    // Validation
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError("Please fill in all fields");
       return;
@@ -59,7 +66,6 @@ const SignupPage = () => {
       return;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
@@ -76,14 +82,11 @@ const SignupPage = () => {
       return;
     }
 
-    // Attempt signup
     const result = await signup(formData.name, formData.email, formData.password);
 
     if (result.success) {
-      // Redirect to dashboard on success
       navigate("/dashboard");
     } else {
-      // Show error message
       setError(result.error || "Signup failed. Please try again.");
     }
   };
@@ -93,57 +96,61 @@ const SignupPage = () => {
       case "weak": return "bg-red-500";
       case "medium": return "bg-yellow-500";
       case "strong": return "bg-green-500";
-      default: return "bg-gray-500";
+      default: return "bg-gray-200";
     }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-sky-950 via-cyan-900 to-teal-950 text-sky-100 font-sans flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+    // Background updated to Deep Purple Gradient
+    <div className={`min-h-screen w-full bg-gradient-to-br ${THEME.background_gradient} flex items-center justify-center p-4`}>
+      
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-[#9575CD] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-[#E91E63] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-[#00C853] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Signup Card */}
+      {/* Signup Card - Switched to White Glassmorphism */}
       <div className="relative w-full max-w-md">
-        <div className="bg-black/20 backdrop-blur-lg border border-sky-500/30 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
           <div className="p-8 sm:p-10">
+            
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl mb-4">
+              <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br ${THEME.button_gradient} rounded-2xl mb-4 shadow-lg shadow-purple-500/30`}>
                 <Eye className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Create Account
               </h2>
-              <p className="text-sky-300">
+              <p className="text-gray-500">
                 Start tracking your expenses today
               </p>
             </div>
 
             {/* Error Alert */}
             {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-red-300 text-sm font-medium">Error</p>
-                  <p className="text-red-200 text-sm">{error}</p>
+                  <p className="text-red-800 text-sm font-bold">Error</p>
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
               </div>
             )}
 
             {/* Signup Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
+              
               {/* Name Input */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
                   Full Name
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="w-5 h-5 text-sky-400" />
+                    <User className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="name"
@@ -152,7 +159,7 @@ const SignupPage = () => {
                     value={formData.name}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="name"
                   />
                 </div>
@@ -160,12 +167,12 @@ const SignupPage = () => {
 
               {/* Email Input */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="w-5 h-5 text-sky-400" />
+                    <Mail className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="email"
@@ -174,7 +181,7 @@ const SignupPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="email"
                   />
                 </div>
@@ -182,12 +189,12 @@ const SignupPage = () => {
 
               {/* Password Input */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-2">
                   Password
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-sky-400" />
+                    <Lock className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="password"
@@ -196,15 +203,16 @@ const SignupPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="new-password"
                   />
                 </div>
+                
                 {/* Password Strength Indicator */}
                 {formData.password && (
                   <div className="mt-2">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-2 bg-sky-900/50 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                         <div 
                           className={`h-full ${getStrengthColor()} transition-all duration-300`}
                           style={{ 
@@ -214,7 +222,7 @@ const SignupPage = () => {
                           }}
                         ></div>
                       </div>
-                      <span className="text-xs text-sky-300 capitalize">{passwordStrength}</span>
+                      <span className="text-xs text-gray-500 font-medium capitalize">{passwordStrength}</span>
                     </div>
                   </div>
                 )}
@@ -222,12 +230,12 @@ const SignupPage = () => {
 
               {/* Confirm Password Input */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700 mb-2">
                   Confirm Password
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-sky-400" />
+                    <Lock className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="confirmPassword"
@@ -236,12 +244,12 @@ const SignupPage = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="new-password"
                   />
                   {formData.confirmPassword && formData.password === formData.confirmPassword && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <CheckCircle className="w-5 h-5 text-[#00C853]" />
                     </div>
                   )}
                 </div>
@@ -251,7 +259,7 @@ const SignupPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-sky-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                className={`w-full py-3.5 px-4 bg-gradient-to-r ${THEME.button_gradient} text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 focus:outline-none focus:ring-2 focus:ring-[#6739B7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2`}
               >
                 {loading ? (
                   <>
@@ -269,11 +277,11 @@ const SignupPage = () => {
 
             {/* Login Link */}
             <div className="mt-8 text-center">
-              <p className="text-sky-200">
+              <p className="text-gray-500">
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+                  className="font-bold text-[#6739B7] hover:text-[#512DA8] transition-colors"
                 >
                   Sign In
                 </Link>
@@ -284,7 +292,7 @@ const SignupPage = () => {
             <div className="mt-4 text-center">
               <Link
                 to="/"
-                className="text-sm text-sky-300 hover:text-sky-200 transition-colors"
+                className="text-sm font-medium text-gray-400 hover:text-[#6739B7] transition-colors"
               >
                 ← Back to Home
               </Link>

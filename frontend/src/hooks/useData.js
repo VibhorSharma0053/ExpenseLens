@@ -93,6 +93,41 @@ export const useCategoryBreakdown = (params = {}) => {
   return { categories, loading, error, refetch: fetchCategories };
 };
 
+export const useDailyTrend = (month, year) => {
+  const [dailyData, setDailyData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasData, setHasData] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!month || !year) return;
+      
+      try {
+        setLoading(true);
+        const response = await analyticsAPI.getDailyTrend(month, year);
+        const data = response.daily_data;
+        
+        setDailyData(data);
+        
+        // Check if there is actual data (non-zero income or expense)
+        const totalActivity = data.reduce((acc, curr) => acc + curr.income + curr.expense, 0);
+        setHasData(totalActivity > 0);
+        
+      } catch (err) {
+        setError(err.response?.data?.detail || 'Failed to fetch daily trends');
+        setHasData(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [month, year]);
+
+  return { dailyData, loading, hasData, error };
+};
+
 // --- ACTION HOOKS (Upload, Update, Delete) ---
 
 export const useUploadPDF = () => {

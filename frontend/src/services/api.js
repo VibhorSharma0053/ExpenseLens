@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+// Use environment variable if available, otherwise default to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -58,6 +59,7 @@ api.interceptors.response.use(
             throw new Error('No refresh token');
         }
 
+        // Call refresh endpoint
         const response = await axios.post(`${API_URL}/auth/refresh`, {
           refresh_token: refreshToken,
         });
@@ -66,6 +68,7 @@ api.interceptors.response.use(
         
         storeTokens(access_token, newRefreshToken);
         
+        // Update header and retry original request
         originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
         return api(originalRequest);
 
@@ -145,6 +148,13 @@ export const analyticsAPI = {
   },
   getCategoryBreakdown: async (params) => {
     const res = await api.get('/analytics/category-breakdown', { params });
+    return res.data;
+  },
+  // NEW METHOD: Get daily trend for a specific month and year
+  getDailyTrend: async (month, year) => {
+    const res = await api.get('/analytics/daily-trend', { 
+      params: { month, year } 
+    });
     return res.data;
   }
 };

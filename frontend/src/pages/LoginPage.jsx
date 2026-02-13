@@ -4,6 +4,14 @@ import { useNavigate, Link } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import { Mail, Lock, Eye, ArrowRight, AlertCircle } from "lucide-react";
 
+// --- Theme Constants ---
+const THEME = {
+  primary: '#6739B7', // Deep Royal Purple
+  secondary: '#9575CD', // Soft Lavender
+  background_gradient: 'from-[#6739B7] via-[#512DA8] to-[#311B92]',
+  button_gradient: 'from-[#6739B7] to-[#9575CD]',
+};
+
 const LoginPage = () => {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
@@ -52,52 +60,56 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-sky-950 via-cyan-900 to-teal-950 text-sky-100 font-sans flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+    // Background updated to Deep Purple Gradient
+    <div className={`min-h-screen w-full bg-gradient-to-br ${THEME.background_gradient} flex items-center justify-center p-4`}>
+      
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-[#9575CD] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-[#E91E63] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-[#00C853] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Login Card */}
+      {/* Login Card - Switched to White Glassmorphism */}
       <div className="relative w-full max-w-md">
-        <div className="bg-black/20 backdrop-blur-lg border border-sky-500/30 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
           <div className="p-8 sm:p-10">
+            
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl mb-4">
+              <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br ${THEME.button_gradient} rounded-2xl mb-4 shadow-lg shadow-purple-500/30`}>
                 <Eye className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white mb-2">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Welcome Back
               </h2>
-              <p className="text-sky-300">
+              <p className="text-gray-500">
                 Sign in to continue to ExpenseLens
               </p>
             </div>
 
             {/* Error Alert */}
             {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-red-300 text-sm font-medium">Error</p>
-                  <p className="text-red-200 text-sm">{error}</p>
+                  <p className="text-red-800 text-sm font-bold">Error</p>
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
               </div>
             )}
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
+              
               {/* Email Input */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="w-5 h-5 text-sky-400" />
+                    <Mail className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="email"
@@ -106,7 +118,7 @@ const LoginPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="email"
                   />
                 </div>
@@ -114,12 +126,12 @@ const LoginPage = () => {
 
               {/* Password Input */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-sky-200 mb-2">
+                <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-2">
                   Password
                 </label>
-                <div className="relative">
+                <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-sky-400" />
+                    <Lock className="w-5 h-5 text-gray-400 group-focus-within:text-[#6739B7] transition-colors" />
                   </div>
                   <input
                     id="password"
@@ -128,7 +140,7 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-sky-500/30 rounded-lg text-white placeholder-sky-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6739B7]/50 focus:border-[#6739B7] disabled:opacity-50 transition-all hover:bg-white"
                     autoComplete="current-password"
                   />
                 </div>
@@ -138,7 +150,7 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-sky-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                className={`w-full py-3.5 px-4 bg-gradient-to-r ${THEME.button_gradient} text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 focus:outline-none focus:ring-2 focus:ring-[#6739B7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2`}
               >
                 {loading ? (
                   <>
@@ -156,11 +168,11 @@ const LoginPage = () => {
 
             {/* Sign Up Link */}
             <div className="mt-8 text-center">
-              <p className="text-sky-200">
+              <p className="text-gray-500">
                 Don't have an account?{" "}
                 <Link
                   to="/signup"
-                  className="font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+                  className="font-bold text-[#6739B7] hover:text-[#512DA8] transition-colors"
                 >
                   Sign Up
                 </Link>
@@ -171,7 +183,7 @@ const LoginPage = () => {
             <div className="mt-4 text-center">
               <Link
                 to="/"
-                className="text-sm text-sky-300 hover:text-sky-200 transition-colors"
+                className="text-sm font-medium text-gray-400 hover:text-[#6739B7] transition-colors"
               >
                 ← Back to Home
               </Link>

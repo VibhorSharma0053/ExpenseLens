@@ -13,9 +13,23 @@ import {
   Upload,
   BarChart3,
   Sparkles,
+  UserPlus,
+  Search,
+  CheckCircle2
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import useAuth from "../hooks/useAuth";
+
+// --- Theme Constants ---
+const THEME = {
+  primary: '#6739B7', // Deep Royal Purple
+  secondary: '#9575CD', // Soft Lavender
+  accent_green: '#00C853', // Emerald
+  accent_blue: '#2979FF', // Electric Blue
+  dark_purple: '#311B92', // Darker background
+  text_gradient: 'from-[#6739B7] via-[#9575CD] to-[#6739B7]',
+  button_gradient: 'from-[#6739B7] to-[#9575CD]',
+};
 
 // Navbar Component
 const Navbar = () => {
@@ -44,7 +58,7 @@ const Navbar = () => {
     <nav
       className={`fixed w-full z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-slate-900/95 backdrop-blur-lg shadow-2xl shadow-teal-500/10"
+          ? "bg-white/95 backdrop-blur-lg shadow-2xl shadow-purple-500/10"
           : "bg-transparent"
       }`}
     >
@@ -56,39 +70,57 @@ const Navbar = () => {
             className="flex items-center space-x-3 group cursor-pointer"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-xl blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <Eye className="w-10 h-10 text-[#00C4B4] relative transition-colors duration-300" />
+              <div className={`absolute inset-0 rounded-xl blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-300 ${
+                scrolled ? "bg-gradient-to-r from-[#6739B7] to-[#9575CD]" : "bg-white/30"
+              }`}></div>
+              <Eye className={`w-10 h-10 relative transition-colors duration-300 ${
+                scrolled ? "text-[#6739B7]" : "text-white"
+              }`} />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-[#00C4B4] via-[#5EE0D9] to-[#00C4B4] bg-clip-text text-transparent">
+            <span className={`text-2xl font-bold transition-all duration-300 ${
+              scrolled 
+                ? "bg-gradient-to-r from-[#6739B7] via-[#9575CD] to-[#6739B7] bg-clip-text text-transparent"
+                : "text-white drop-shadow-md"
+            }`}>
               ExpenseLens
             </span>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a
-              href="#features"
-              className="text-gray-300 hover:text-[#00C4B4] transition-all duration-300 hover:scale-110"
-            >
-              Features
-            </a>
-            <a
-              href="#how-it-works"
-              className="text-gray-300 hover:text-[#00C4B4] transition-all duration-300 hover:scale-110"
-            >
-              How It Works
-            </a>
+            {['Features', 'How It Works'].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                className={`font-medium transition-all duration-300 hover:scale-110 ${
+                  scrolled 
+                    ? "text-gray-600 hover:text-[#6739B7]" 
+                    : "text-white/90 hover:text-white"
+                }`}
+              >
+                {item}
+              </a>
+            ))}
+
             {isAuthenticated && (
               <button
                 onClick={() => navigate('/dashboard')}
-                className="text-gray-300 hover:text-[#00C4B4] transition-all duration-300 hover:scale-110"
+                className={`font-medium transition-all duration-300 hover:scale-110 ${
+                  scrolled 
+                    ? "text-gray-600 hover:text-[#6739B7]" 
+                    : "text-white/90 hover:text-white"
+                }`}
               >
                 Dashboard
               </button>
             )}
             <button 
               onClick={handleGetStarted}
-              className="px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300"
+              className={`px-6 py-2.5 rounded-full font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg ${
+                scrolled
+                  ? "bg-gradient-to-r from-[#6739B7] to-[#9575CD] text-white hover:shadow-[#6739B7]/50"
+                  : "bg-white text-[#6739B7] hover:bg-gray-100 hover:shadow-white/20"
+              }`}
             >
               {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             </button>
@@ -96,7 +128,7 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white"
+            className={`md:hidden ${scrolled ? 'text-gray-800' : 'text-white'}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (
@@ -110,19 +142,19 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900/95 backdrop-blur-lg border-t border-[#00C4B4]/20">
+        <div className="md:hidden bg-white/95 backdrop-blur-lg border-t border-purple-100 shadow-xl">
           <div className="px-4 py-6 space-y-4">
             <a
               href="#features"
               onClick={() => setMobileMenuOpen(false)}
-              className="block text-gray-300 hover:text-[#00C4B4] transition-colors"
+              className="block text-gray-600 hover:text-[#6739B7] transition-colors font-medium"
             >
               Features
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="block text-gray-300 hover:text-[#00C4B4] transition-colors"
+              className="block text-gray-600 hover:text-[#6739B7] transition-colors font-medium"
             >
               How It Works
             </a>
@@ -132,7 +164,7 @@ const Navbar = () => {
                   navigate('/dashboard');
                   setMobileMenuOpen(false);
                 }}
-                className="block w-full text-left text-gray-300 hover:text-[#00C4B4] transition-colors"
+                className="block w-full text-left text-gray-600 hover:text-[#6739B7] transition-colors font-medium"
               >
                 Dashboard
               </button>
@@ -142,7 +174,7 @@ const Navbar = () => {
                 handleGetStarted();
                 setMobileMenuOpen(false);
               }}
-              className="w-full px-6 py-2.5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold"
+              className="w-full px-6 py-2.5 bg-gradient-to-r from-[#6739B7] to-[#9575CD] rounded-full text-white font-semibold"
             >
               {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             </button>
@@ -180,26 +212,25 @@ const HeroSection = () => {
 
   const handleUploadClick = () => {
     if (isAuthenticated) {
-      navigate('/transactions');
+      navigate('/dashboard');
     } else {
       navigate('/signup');
     }
   };
 
   const handleDemoClick = () => {
-    // Scroll to features section
     document.getElementById('features')?.scrollIntoView({ 
       behavior: 'smooth' 
     });
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#6739B7] via-[#512DA8] to-[#311B92]">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-[#00C4B4] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-[#5EE0D9] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-[#FFF0F5] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-[#9575CD] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-[#E91E63] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-[#00C853] rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Grid Pattern Overlay */}
@@ -215,22 +246,22 @@ const HeroSection = () => {
                 : "-translate-x-20 opacity-0"
             }`}
           >
-            <div className="inline-flex items-center space-x-2 bg-[#00C4B4]/10 backdrop-blur-lg border border-[#00C4B4]/20 rounded-full px-4 py-2 mb-6">
-              <Sparkles className="w-4 h-4 text-[#00C4B4]" />
-              <span className="text-sm text-[#5EE0D9]">
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full px-4 py-2 mb-6">
+              <Sparkles className="w-4 h-4 text-[#FFC107]" />
+              <span className="text-sm text-white font-medium">
                 Track, Analyze, Optimize
               </span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-[#00C4B4] via-[#5EE0D9] to-[#00C4B4] bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
+              <span className="bg-gradient-to-r from-white via-[#EDE7F6] to-[#D1C4E9] bg-clip-text text-transparent">
                 Transform Your
               </span>
               <br />
-              <span className="text-white">Spending Habits</span>
+              <span className="text-[#FFC107]">Spending Habits</span>
             </h1>
 
-            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+            <p className="text-xl text-[#D1C4E9] mb-8 leading-relaxed">
               Upload your PhonePe payment history and unlock powerful insights.
               Visualize your spending, discover patterns, and take control of
               your finances like never before.
@@ -239,7 +270,7 @@ const HeroSection = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
                 onClick={handleUploadClick}
-                className="group px-8 py-4 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white font-semibold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
+                className="group px-8 py-4 bg-white text-[#6739B7] rounded-full font-bold hover:shadow-2xl hover:shadow-white/20 transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
               >
                 <Upload className="w-5 h-5" />
                 <span>{isAuthenticated ? 'Upload PDF Now' : 'Get Started Free'}</span>
@@ -248,7 +279,7 @@ const HeroSection = () => {
 
               <button 
                 onClick={handleDemoClick}
-                className="px-8 py-4 bg-white/5 backdrop-blur-lg border border-[#C2F0E7]/30 rounded-full text-white font-semibold hover:bg-[#C2F0E7]/10 hover:border-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300"
+                className="px-8 py-4 bg-[#6739B7]/50 backdrop-blur-lg border border-white/30 rounded-full text-white font-semibold hover:bg-[#6739B7]/70 hover:border-white/50 transform hover:scale-105 transition-all duration-300"
               >
                 View Features
               </button>
@@ -256,17 +287,17 @@ const HeroSection = () => {
 
             <div className="mt-12 flex items-center space-x-8">
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] bg-clip-text text-transparent">
+                <div className="text-3xl font-bold text-white">
                   10K+
                 </div>
-                <div className="text-sm text-gray-400">Active Users</div>
+                <div className="text-sm text-[#D1C4E9]">Active Users</div>
               </div>
-              <div className="w-px h-12 bg-[#C2F0E7]/20"></div>
+              <div className="w-px h-12 bg-white/20"></div>
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] bg-clip-text text-transparent">
+                <div className="text-3xl font-bold text-white">
                   1M+
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[#D1C4E9]">
                   Transactions Analyzed
                 </div>
               </div>
@@ -283,13 +314,13 @@ const HeroSection = () => {
           >
             <div className="relative">
               <FloatingElement delay={0}>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#00C4B4] to-[#5EE0D9] rounded-3xl transform rotate-6 opacity-20 blur-2xl"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#E91E63] to-[#FF9800] rounded-3xl transform rotate-6 opacity-30 blur-2xl"></div>
               </FloatingElement>
 
-              <div className="relative bg-slate-800/50 backdrop-blur-xl border border-[#00C4B4]/20 rounded-3xl p-8 shadow-2xl">
+              <div className="relative bg-white/90 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
                 <div className="space-y-6">
                   <FloatingElement delay={0.5}>
-                    <div className="bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-2xl p-6 transform hover:scale-105 transition-transform duration-300 shadow-lg shadow-[#00C4B4]/20">
+                    <div className={`bg-gradient-to-r ${THEME.button_gradient} rounded-2xl p-6 transform hover:scale-105 transition-transform duration-300 shadow-lg shadow-purple-500/20`}>
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-white font-semibold">
                           Monthly Spending
@@ -299,7 +330,7 @@ const HeroSection = () => {
                       <div className="text-3xl font-bold text-white">
                         ₹45,234
                       </div>
-                      <div className="text-sm text-[#C2F0E7] mt-2">
+                      <div className="text-sm text-[#E1BEE7] mt-2">
                         ↑ 12% from last month
                       </div>
                     </div>
@@ -307,24 +338,24 @@ const HeroSection = () => {
 
                   <FloatingElement delay={1}>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-slate-700/50 rounded-xl p-4 border border-[#00C4B4]/10 hover:border-[#00C4B4]/30 hover:bg-[#00C4B4]/5 transition-all duration-300">
-                        <PieChart className="w-8 h-8 text-[#00C4B4] mb-2" />
-                        <div className="text-sm text-gray-400">Categories</div>
-                        <div className="text-xl font-bold text-white">12</div>
+                      <div className="bg-white rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <PieChart className="w-8 h-8 text-[#E91E63] mb-2" />
+                        <div className="text-sm text-gray-500">Categories</div>
+                        <div className="text-xl font-bold text-[#6739B7]">12</div>
                       </div>
-                      <div className="bg-slate-700/50 rounded-xl p-4 border border-[#5EE0D9]/10 hover:border-[#5EE0D9]/30 hover:bg-[#5EE0D9]/5 transition-all duration-300">
-                        <BarChart3 className="w-8 h-8 text-[#5EE0D9] mb-2" />
-                        <div className="text-sm text-gray-400">
+                      <div className="bg-white rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <BarChart3 className="w-8 h-8 text-[#00C853] mb-2" />
+                        <div className="text-sm text-gray-500">
                           Transactions
                         </div>
-                        <div className="text-xl font-bold text-white">284</div>
+                        <div className="text-xl font-bold text-[#6739B7]">284</div>
                       </div>
                     </div>
                   </FloatingElement>
 
                   <FloatingElement delay={1.5}>
-                    <div className="bg-slate-700/30 rounded-xl p-4 border border-[#C2F0E7]/10">
-                      <div className="text-sm text-gray-400 mb-3">
+                    <div className="bg-white rounded-xl p-4 border border-purple-100 shadow-sm">
+                      <div className="text-sm text-gray-500 mb-3 font-semibold">
                         Top Categories
                       </div>
                       <div className="space-y-2">
@@ -334,10 +365,14 @@ const HeroSection = () => {
                               key={idx}
                               className="flex items-center justify-between"
                             >
-                              <span className="text-white text-sm">{cat}</span>
-                              <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
+                              <span className="text-gray-700 text-sm font-medium">{cat}</span>
+                              <div className="w-24 h-2 bg-purple-100 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9]"
+                                  className={`h-full bg-gradient-to-r ${
+                                    idx === 0 ? "from-[#FF9800] to-[#FFC107]" : 
+                                    idx === 1 ? "from-[#E91E63] to-[#F48FB1]" :
+                                    "from-[#00C853] to-[#69F0AE]"
+                                  }`}
                                   style={{ width: `${100 - idx * 25}%` }}
                                 ></div>
                               </div>
@@ -388,15 +423,11 @@ const FeatureCard = ({
   return (
     <div
       id={`feature-${title}`}
-      className={`group relative bg-slate-800/50 backdrop-blur-lg border border-[#C2F0E7]/20 rounded-2xl p-8 hover:border-[#00C4B4]/50 hover:bg-slate-800/70 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 ${
+      className={`group relative bg-white border border-purple-100 rounded-2xl p-8 hover:border-[#6739B7]/30 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
       }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <div
-        className={`absolute inset-0 bg-gradient-to-br from-[#00C4B4]/0 to-[#5EE0D9]/0 group-hover:from-[#00C4B4]/10 group-hover:to-[#5EE0D9]/5 rounded-2xl transition-all duration-500`}
-      ></div>
-
       <div className="relative">
         <div
           className={`w-16 h-16 bg-gradient-to-br ${accentColor} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}
@@ -404,11 +435,11 @@ const FeatureCard = ({
           <Icon className="w-8 h-8 text-white" />
         </div>
 
-        <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-[#00C4B4] transition-colors">
+        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-[#6739B7] transition-colors">
           {title}
         </h3>
 
-        <p className="text-gray-400 leading-relaxed">{description}</p>
+        <p className="text-gray-500 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -422,66 +453,64 @@ const FeaturesSection = () => {
       title: "Easy PDF Upload",
       description:
         "Simply drag and drop your PhonePe payment history PDF. Our advanced parser extracts every transaction with precision.",
-      accentColor: "from-[#00C4B4] to-[#5EE0D9]",
+      accentColor: "from-[#6739B7] to-[#9575CD]", // Purple
     },
     {
       icon: PieChart,
       title: "Visual Analytics",
       description:
         "Beautiful charts and graphs that transform raw data into actionable insights. See where your money really goes.",
-      accentColor: "from-[#5EE0D9] to-[#00C4B4]",
+      accentColor: "from-[#E91E63] to-[#F48FB1]", // Pink/Red
     },
     {
       icon: TrendingUp,
       title: "Trend Analysis",
       description:
         "Track spending patterns over time. Identify trends, spot anomalies, and make data-driven financial decisions.",
-      accentColor: "from-[#00C4B4] to-[#5EE0D9]",
+      accentColor: "from-[#00C853] to-[#69F0AE]", // Green
     },
     {
       icon: Shield,
       title: "Bank-Level Security",
       description:
         "Your data is encrypted and secure. We never store your actual payment credentials, only anonymized transaction data.",
-      accentColor: "from-[#5EE0D9] to-[#C2F0E7]",
+      accentColor: "from-[#2979FF] to-[#82B1FF]", // Blue
     },
     {
       icon: Zap,
       title: "Lightning Fast",
       description:
         "Process thousands of transactions in seconds. Get instant insights without any waiting around.",
-      accentColor: "from-[#00C4B4] to-[#5EE0D9]",
+      accentColor: "from-[#FF9800] to-[#FFC107]", // Orange/Yellow
     },
     {
       icon: BarChart3,
       title: "Smart Categories",
       description:
         "Automatic categorization of expenses. We intelligently group your spending for better understanding.",
-      accentColor: "from-[#5EE0D9] to-[#00C4B4]",
+      accentColor: "from-[#6739B7] to-[#2979FF]", // Purple to Blue
     },
   ];
 
   return (
     <section
       id="features"
-      className="relative py-32 bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden"
+      className="relative py-32 bg-[#F5F5FA] overflow-hidden"
     >
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#6739B7]/20 to-transparent"></div>
+      
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
-          <div className="inline-flex items-center space-x-2 bg-[#00C4B4]/10 backdrop-blur-lg border border-[#00C4B4]/20 rounded-full px-4 py-2 mb-6">
-            <Sparkles className="w-4 h-4 text-[#00C4B4]" />
-            <span className="text-sm text-[#5EE0D9]">Powerful Features</span>
+          <div className="inline-flex items-center space-x-2 bg-purple-50 border border-purple-100 rounded-full px-4 py-2 mb-6">
+            <Sparkles className="w-4 h-4 text-[#6739B7]" />
+            <span className="text-sm text-[#6739B7] font-semibold">Powerful Features</span>
           </div>
 
-          <h2 className="text-4xl md:text-6xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-[#00C4B4] via-[#5EE0D9] to-[#00C4B4] bg-clip-text text-transparent">
-              Everything You Need
-            </span>
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900">
+            Everything You Need
           </h2>
 
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-500 max-w-3xl mx-auto">
             Comprehensive tools to help you understand, analyze, and optimize
             your spending habits
           </p>
@@ -504,6 +533,97 @@ const FeaturesSection = () => {
   );
 };
 
+// --- NEW COMPONENT: How It Works ---
+const HowItWorks = () => {
+  const steps = [
+    {
+      id: 1,
+      title: "Create an Account",
+      desc: "Sign up in seconds using your email. It's free, secure, and requires no credit card.",
+      icon: UserPlus,
+      color: "from-[#6739B7] to-[#9575CD]" // Purple
+    },
+    {
+      id: 2,
+      title: "Upload Statement",
+      desc: "Download your PhonePe transaction history as a PDF and drag it into our secure uploader.",
+      icon: Upload,
+      color: "from-[#E91E63] to-[#F48FB1]" // Pink
+    },
+    {
+      id: 3,
+      title: "Instant Processing",
+      desc: "Our AI engine parses the PDF, removes duplicates, and categorizes every transaction automatically.",
+      icon: Search,
+      color: "from-[#FF9800] to-[#FFC107]" // Orange
+    },
+    {
+      id: 4,
+      title: "View Analytics",
+      desc: "Get immediate access to your dashboard with charts, monthly trends, and spending breakdowns.",
+      icon: CheckCircle2,
+      color: "from-[#00C853] to-[#69F0AE]" // Green
+    }
+  ];
+
+  return (
+    <section id="how-it-works" className="py-32 bg-white relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
+        <div className="text-center mb-24">
+          <div className="inline-flex items-center space-x-2 bg-purple-50 border border-purple-100 rounded-full px-4 py-2 mb-6">
+            <Zap className="w-4 h-4 text-[#6739B7]" />
+            <span className="text-sm text-[#6739B7] font-semibold">Simple Process</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            From PDF to Insights in Seconds
+          </h2>
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            We've simplified the process so you can focus on saving money, not organizing data.
+          </p>
+        </div>
+
+        {/* Steps Container */}
+        <div className="relative">
+          {/* Connecting Line (Desktop) */}
+          <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-100 to-transparent -translate-y-1/2 z-0"></div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+            {steps.map((step, index) => (
+              <div key={index} className="group relative flex flex-col items-center text-center">
+                
+                {/* Step Number Circle */}
+                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${step.color} p-0.5 shadow-xl shadow-purple-500/10 mb-8 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6`}>
+                  <div className="w-full h-full bg-white rounded-xl flex items-center justify-center relative overflow-hidden">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+                    <step.icon className={`w-8 h-8 text-[#6739B7]`} />
+                    <div className="absolute top-1 right-1 text-[10px] font-bold text-gray-300">0{step.id}</div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#6739B7] transition-colors">
+                  {step.title}
+                </h3>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
+                  {step.desc}
+                </p>
+
+                {/* Mobile Connector Line */}
+                {index !== steps.length - 1 && (
+                  <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-purple-100 -translate-x-1/2"></div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};
+
 // CTA Section Component
 const CTASection = () => {
   const navigate = useNavigate();
@@ -518,32 +638,31 @@ const CTASection = () => {
   };
 
   return (
-    <section className="relative py-32 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <section className="relative py-32 bg-[#F5F5FA] overflow-hidden border-t border-purple-50">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#00C4B4] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#5EE0D9] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-[#FFF0F5] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#9575CD] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#E91E63] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
+        <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
           Ready to Take Control?
         </h2>
 
-        <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+        <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto">
           Join thousands of users who have transformed their financial lives
           with ExpenseLens
         </p>
 
         <button 
           onClick={handleStartClick}
-          className="group px-10 py-5 bg-gradient-to-r from-[#00C4B4] to-[#5EE0D9] rounded-full text-white text-lg font-bold hover:shadow-2xl hover:shadow-[#00C4B4]/50 transform hover:scale-105 transition-all duration-300 inline-flex items-center space-x-3"
+          className={`group px-10 py-5 bg-gradient-to-r ${THEME.button_gradient} rounded-full text-white text-lg font-bold hover:shadow-2xl hover:shadow-purple-500/30 transform hover:scale-105 transition-all duration-300 inline-flex items-center space-x-3`}
         >
           <span>{isAuthenticated ? 'Go to Dashboard' : 'Start Analyzing Now'}</span>
           <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
         </button>
 
-        <p className="text-gray-400 mt-6">
+        <p className="text-gray-400 mt-6 font-medium">
           No credit card required • Free forever
         </p>
       </div>
@@ -554,7 +673,7 @@ const CTASection = () => {
 // Main Landing Page Component
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-white">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -567,6 +686,10 @@ const LandingPage = () => {
           66% { transform: translate(-20px, 20px) scale(0.9); }
         }
         
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
         .animate-blob {
           animation: blob 7s infinite;
         }
@@ -581,8 +704,8 @@ const LandingPage = () => {
         
         .bg-grid-pattern {
           background-image: 
-            linear-gradient(to right, rgba(0, 196, 180, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 196, 180, 0.1) 1px, transparent 1px);
+            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
           background-size: 50px 50px;
         }
       `}</style>
@@ -590,6 +713,8 @@ const LandingPage = () => {
       <Navbar />
       <HeroSection />
       <FeaturesSection />
+      {/* Inserted the How It Works Section Here */}
+      <HowItWorks />
       <CTASection />
     </div>
   );

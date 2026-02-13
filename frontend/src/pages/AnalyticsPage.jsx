@@ -1,42 +1,47 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TopHeader from '../components/TopHeader';
 import { 
   useAnalyticsSummary, 
   useMonthlyTrend, 
-  useCategoryBreakdown 
+  useCategoryBreakdown,
+  useDailyTrend // Custom hook from previous step
 } from '../hooks/useData';
 import { 
-  TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, 
-  Activity, Target, ShoppingBag, Download, BarChart3, 
-  Coffee, Car, Home, Smartphone, CreditCard, Loader
+  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, 
+  Activity, ShoppingBag, Download, BarChart3, 
+  Loader, Info, ChevronDown, Calendar, FileX, X
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart as RePieChart, Pie, Cell, BarChart, Bar
+  PieChart as RePieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
 
 // --- Constants ---
-const CHART_COLORS = ['#00C4B4', '#5EE0D9', '#99F6E4', '#CCFBF1', '#0F766E'];
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const CHART_COLORS = ['#6739B7', '#E91E63', '#FF9800', '#FFC107', '#00C853', '#2979FF'];
 
-// --- Helper Functions ---
-const getDateRange = (period) => {
-  const end = new Date();
-  const start = new Date();
-  
-  if (period === 'Week') {
-    start.setDate(end.getDate() - 7);
-  } else if (period === 'Month') {
-    start.setDate(1); // 1st of current month
-  } else if (period === 'Year') {
-    start.setMonth(0, 1); // Jan 1st of current year
-  }
-  return { 
-    start_date: start.toISOString(), 
-    end_date: end.toISOString() 
-  };
+const THEME = {
+  primary: '#6739B7', 
+  secondary: '#9575CD', 
+  success: '#00C853', 
+  danger: '#FF5252', 
+  background: '#F5F5FA'
 };
 
+const MONTHS = [
+    { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
+    { value: 4, label: 'April' }, { value: 5, label: 'May' }, { value: 6, label: 'June' },
+    { value: 7, label: 'July' }, { value: 8, label: 'August' }, { value: 9, label: 'September' },
+    { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' }
+];
+
+// Generate years (Current year down to 2020)
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({length: 5}, (_, i) => CURRENT_YEAR - i);
+
+// --- Helpers ---
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -45,10 +50,18 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
-// --- Sub-Components ---
+const getDateRange = (period) => {
+  const end = new Date();
+  const start = new Date();
+  if (period === 'Week') start.setDate(end.getDate() - 7);
+  else if (period === 'Month') start.setDate(1);
+  else if (period === 'Year') start.setMonth(0, 1);
+  return { start_date: start.toISOString(), end_date: end.toISOString() };
+};
 
+// --- Sub-Components ---
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl border border-teal-100 shadow-sm hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-300 ${className}`}>
+  <div className={`bg-white rounded-2xl border border-purple-100 shadow-sm hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 ${className}`}>
     {children}
   </div>
 );
@@ -56,8 +69,8 @@ const Card = ({ children, className = "" }) => (
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white/95 backdrop-blur-md p-4 border border-teal-100 rounded-xl shadow-xl z-50">
-        <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
+      <div className="bg-white/95 backdrop-blur-md p-4 border border-purple-100 rounded-xl shadow-xl z-50">
+        <p className="text-sm font-bold text-gray-800 mb-2">{label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2 text-xs font-medium mb-1">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
@@ -73,9 +86,40 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const OverviewCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, colorClass, loading }) => {
+const DailyTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 backdrop-blur-md p-3 border border-purple-100 rounded-xl shadow-xl z-50 min-w-[120px]">
+          <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Day {label}</p>
+          {payload.map((entry, index) => (
+             entry.value > 0 && (
+                <div key={index} className="flex justify-between items-center mb-1 gap-4">
+                    <span className={`text-xs font-medium ${entry.name === 'Income' ? 'text-[#00C853]' : 'text-[#FF5252]'}`}>
+                        {entry.name}
+                    </span>
+                    <span className="text-xs font-bold text-gray-900">
+                        {formatCurrency(entry.value)}
+                    </span>
+                </div>
+             )
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+const OverviewCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, colorTheme, loading }) => {
   const isUp = trend === 'up';
-  
+  const styles = {
+    purple: "from-[#6739B7] to-[#9575CD]",
+    green: "from-[#00C853] to-[#69F0AE]",
+    red: "from-[#FF5252] to-[#FF8A80]",
+    blue: "from-[#2979FF] to-[#82B1FF]",
+    orange: "from-[#FF9800] to-[#FFB74D]"
+  };
+  const gradientClass = styles[colorTheme] || styles.purple;
+
   return (
     <Card className="p-6 relative overflow-hidden group">
       {loading ? (
@@ -88,21 +132,21 @@ const OverviewCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, c
         </div>
       ) : (
         <>
-          <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${colorClass} opacity-10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110`}></div>
+          <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradientClass} opacity-10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110`}></div>
           <div className="flex justify-between items-start mb-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${colorClass} text-white shadow-lg shadow-teal-500/20`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${gradientClass} text-white shadow-lg shadow-gray-200`}>
               <Icon className="w-6 h-6" />
             </div>
             {trendValue && (
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${isUp ? 'bg-teal-50 text-teal-600' : 'bg-rose-50 text-rose-500'}`}>
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${isUp ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                 {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 {trendValue}
-                </div>
+              </div>
             )}
           </div>
           <div>
             <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
-            <div className="text-3xl font-bold text-gray-900 mb-2">{value}</div>
+            <div className="text-3xl font-bold text-[#6739B7] mb-2">{value}</div>
             <p className="text-xs text-gray-400 font-medium">{subtitle}</p>
           </div>
         </>
@@ -113,29 +157,33 @@ const OverviewCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, c
 
 // --- Main Analytics Page ---
 const Analytics = () => {
-  const [timeFilter, setTimeFilter] = useState('Month'); // Week, Month, Year
+  const [timeFilter, setTimeFilter] = useState('Month'); 
   const [dateRange, setDateRange] = useState(getDateRange('Month'));
-
-  // 1. Fetch Summary Data (Cards)
-  const { summary, loading: summaryLoading, refetch: refetchSummary } = useAnalyticsSummary(dateRange);
   
-  // 2. Fetch Trends Data (Chart)
-  const { trends, loading: trendsLoading } = useMonthlyTrend(6); // Always show last 6 months trend
+  // State for Daily Chart Selectors
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // 3. Fetch Category Breakdown (Pie Chart)
-  const { categories, loading: catLoading, refetch: refetchCats } = useCategoryBreakdown(dateRange);
+  // State for Toast Notification
+  const [showExportToast, setShowExportToast] = useState(false);
 
-  // Handle Filter Change
+  // Hooks
+  const { summary, loading: summaryLoading } = useAnalyticsSummary(dateRange);
+  const { trends, loading: trendsLoading } = useMonthlyTrend(6);
+  const { categories, loading: catLoading } = useCategoryBreakdown(dateRange);
+  const { dailyData, loading: dailyLoading, hasData: dailyHasData } = useDailyTrend(selectedMonth, selectedYear);
+
   const handleFilterChange = (period) => {
     setTimeFilter(period);
-    const newRange = getDateRange(period);
-    setDateRange(newRange);
-    // Trigger refetches with new dates
-    // Note: Hooks update automatically when dependency (dateRange) changes, 
-    // but explicit refetch ensures freshness if needed.
+    setDateRange(getDateRange(period));
   };
 
-  // Process Trends Data for Recharts
+  const handleExportClick = () => {
+    setShowExportToast(true);
+    // Hide after 3 seconds
+    setTimeout(() => setShowExportToast(false), 3000);
+  };
+
   const chartData = useMemo(() => {
     if (!trends) return [];
     return trends.map(t => ({
@@ -145,7 +193,6 @@ const Analytics = () => {
     }));
   }, [trends]);
 
-  // Process Category Data for Pie Chart
   const pieData = useMemo(() => {
     if (!categories) return [];
     return categories.map(c => ({
@@ -154,30 +201,55 @@ const Analytics = () => {
     }));
   }, [categories]);
 
-  // Calculate generic trends for cards (simple logic vs previous period)
-  const getTrend = (current, previous) => {
-     // Simplified: In a real app, you'd fetch previous month data to compare
-     return { direction: 'up', value: '0%' }; 
-  };
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] transition-all duration-300">
+    <div className="min-h-screen bg-[#F5F5FA] transition-all duration-300 font-sans relative">
+      
+      {/* Toast Notification */}
+      {showExportToast && (
+        <div className="fixed top-24 right-8 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-start gap-4 animate-in fade-in slide-in-from-top-5 duration-300 w-80 border-l-4 border-[#00C853]">
+          <div className="p-1 bg-gray-800 rounded-full">
+            <Info className="w-5 h-5 text-[#00C853]" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-sm mb-1">Coming Soon!</h4>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              We are working hard on the PDF/Excel export feature. It will be available in the next update.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowExportToast(false)}
+            className="text-gray-500 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <Sidebar />
       <div className="ml-72 transition-all duration-300">
         <TopHeader title="Analytics Overview" subtitle={`Report for this ${timeFilter.toLowerCase()}`}>
             <div className="flex items-center gap-4 hidden md:flex">
-                <div className="flex items-center gap-2 bg-gray-50 px-1 py-1 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2 bg-white px-1 py-1 rounded-xl border border-purple-100 shadow-sm">
                     {['Week', 'Month', 'Year'].map((period) => (
                     <button 
                         key={period} 
                         onClick={() => handleFilterChange(period)}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${timeFilter === period ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                          timeFilter === period 
+                            ? 'bg-purple-50 text-[#6739B7] font-bold shadow-sm' 
+                            : 'text-gray-500 hover:text-[#6739B7] hover:bg-gray-50'
+                        }`}
                     >
                         {period}
                     </button>
                     ))}
                 </div>
-                <button className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gray-200">
+                
+                {/* Export Button with Toast Handler */}
+                <button 
+                    onClick={handleExportClick}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#6739B7] to-[#9575CD] hover:shadow-lg hover:shadow-purple-500/30 text-white rounded-xl font-medium flex items-center gap-2 transition-all active:scale-95"
+                >
                     <Download className="w-4 h-4" />
                     <span>Export</span>
                 </button>
@@ -193,7 +265,7 @@ const Analytics = () => {
                 subtitle="Calculated from period" 
                 icon={Activity} 
                 trend={summary?.net_balance >= 0 ? "up" : "down"} 
-                colorClass="from-teal-400 to-teal-600" 
+                colorTheme="purple"
                 loading={summaryLoading}
             />
             <OverviewCard 
@@ -202,7 +274,7 @@ const Analytics = () => {
                 subtitle={`${summary?.transaction_count || 0} transactions`} 
                 icon={ArrowUpRight} 
                 trend="up"
-                colorClass="from-indigo-400 to-indigo-600" 
+                colorTheme="green"
                 loading={summaryLoading}
             />
             <OverviewCard 
@@ -211,7 +283,7 @@ const Analytics = () => {
                 subtitle="Spending this period" 
                 icon={ShoppingBag} 
                 trend="down"
-                colorClass="from-rose-400 to-rose-600" 
+                colorTheme="red"
                 loading={summaryLoading}
             />
             <OverviewCard 
@@ -220,50 +292,50 @@ const Analytics = () => {
                 subtitle="Total Operations" 
                 icon={BarChart3} 
                 trend="neutral"
-                colorClass="from-amber-400 to-amber-600" 
+                colorTheme="orange"
                 loading={summaryLoading}
             />
           </div>
 
-          {/* 2. Charts Section */}
+          {/* 2. Main Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Income vs Expense Chart */}
+            {/* Income vs Expense Trend (Area Chart) */}
             <Card className="p-6 col-span-2">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">Income vs Expenses</h3>
-                        <p className="text-sm text-gray-500">6 Month Trend</p>
+                        <h3 className="text-lg font-bold text-gray-900">Income vs Expenses Trend</h3>
+                        <p className="text-sm text-gray-500">6 Month Timeline</p>
                     </div>
                 </div>
                 <div className="h-[300px] w-full">
                     {trendsLoading ? (
-                        <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-teal-500" /></div>
+                        <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-[#6739B7]" /></div>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
-                            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00C4B4" stopOpacity={0.2}/><stop offset="95%" stopColor="#00C4B4" stopOpacity={0}/></linearGradient>
-                            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#FB7185" stopOpacity={0.2}/><stop offset="95%" stopColor="#FB7185" stopOpacity={0}/></linearGradient>
+                            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={THEME.success} stopOpacity={0.2}/><stop offset="95%" stopColor={THEME.success} stopOpacity={0}/></linearGradient>
+                            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={THEME.danger} stopOpacity={0.2}/><stop offset="95%" stopColor={THEME.danger} stopOpacity={0}/></linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dy={10} />
                             <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Area type="monotone" dataKey="income" stroke="#00C4B4" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
-                            <Area type="monotone" dataKey="expense" stroke="#FB7185" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
+                            <Area type="monotone" dataKey="income" name="Income" stroke={THEME.success} strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
+                            <Area type="monotone" dataKey="expense" name="Expense" stroke={THEME.danger} strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
                         </AreaChart>
                         </ResponsiveContainer>
                     )}
                 </div>
             </Card>
 
-            {/* Spending Pie Chart */}
+            {/* Pie Chart */}
             <Card className="p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Top Categories</h3>
                 <p className="text-sm text-gray-500 mb-4">{timeFilter} Breakdown</p>
                 <div className="h-[250px] w-full relative">
                     {catLoading ? (
-                        <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-teal-500" /></div>
+                        <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-[#6739B7]" /></div>
                     ) : pieData.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-gray-400 text-sm">No data for this period</div>
                     ) : (
@@ -276,7 +348,6 @@ const Analytics = () => {
                         </RePieChart>
                         </ResponsiveContainer>
                     )}
-                    {/* Center Total */}
                     {!catLoading && pieData.length > 0 && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className="text-2xl font-bold text-gray-900">{formatCurrency(summary?.total_spent)}</span>
@@ -284,39 +355,94 @@ const Analytics = () => {
                         </div>
                     )}
                 </div>
-                {/* Legend */}
-                <div className="mt-4 space-y-2 max-h-32 overflow-y-auto">
+                <div className="mt-4 space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
                     {pieData.slice(0, 4).map((entry, index) => (
                         <div key={index} className="flex justify-between text-xs">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}></div>
-                                <span>{entry.name}</span>
+                                <span className="text-gray-600 font-medium">{entry.name}</span>
                             </div>
-                            <span className="font-semibold">{formatCurrency(entry.value)}</span>
+                            <span className="font-bold text-gray-900">{formatCurrency(entry.value)}</span>
                         </div>
                     ))}
                 </div>
             </Card>
           </div>
 
-          {/* 3. Detailed Category Breakdown (Bar Chart) */}
+          {/* 3. Daily Detailed Analysis (Interactive Day-by-Day Bar Chart) */}
           <div className="grid grid-cols-1 gap-6">
             <Card className="p-6">
-              <div className="mb-6"><h3 className="text-lg font-bold text-gray-900">Category Deep Dive</h3></div>
-              <div className="h-[320px] w-full">
-                {catLoading ? (
-                    <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-teal-500" /></div>
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                    <h3 className="text-lg font-bold text-gray-900">Daily Activity Breakdown</h3>
+                    <p className="text-sm text-gray-500">Day-wise income and expenses</p>
+                </div>
+                
+                {/* Selectors */}
+                <div className="flex gap-3">
+                    {/* Month Selector */}
+                    <div className="relative">
+                        <select 
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                            className="appearance-none bg-purple-50 border border-purple-100 text-[#6739B7] font-bold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6739B7] cursor-pointer"
+                        >
+                            {MONTHS.map(m => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#6739B7] pointer-events-none" />
+                    </div>
+
+                    {/* Year Selector */}
+                    <div className="relative">
+                        <select 
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(Number(e.target.value))}
+                            className="appearance-none bg-white border border-purple-100 text-gray-700 font-bold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6739B7] cursor-pointer"
+                        >
+                            {YEARS.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    </div>
+                </div>
+              </div>
+              
+              <div className="h-[320px] w-full relative">
+                {dailyLoading ? (
+                    <div className="h-full flex items-center justify-center"><Loader className="animate-spin text-[#6739B7]" /></div>
+                ) : !dailyHasData ? (
+                    // --- NO DATA STATE ---
+                    <div className="h-full flex flex-col items-center justify-center text-center bg-[#F5F5FA] rounded-xl border border-dashed border-purple-100">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm">
+                            <FileX className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <h4 className="text-gray-900 font-bold">No Data Found</h4>
+                        <p className="text-sm text-gray-500 mt-1">
+                            No transactions found for {MONTHS.find(m => m.value === selectedMonth).label} {selectedYear}.
+                        </p>
+                        <p className="text-xs text-[#6739B7] mt-2 font-medium">Try uploading a PDF for this period.</p>
+                    </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={pieData} layout="vertical" margin={{ left: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: '#4B5563' }} width={100} axisLine={false} tickLine={false} />
-                        <Tooltip cursor={{fill: '#F3F4F6'}} content={<CustomTooltip />} />
-                        <Bar dataKey="value" fill="#00C4B4" radius={[0, 4, 4, 0]} barSize={20}>
-                        {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-                        </Bar>
-                    </BarChart>
+                        <BarChart data={dailyData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                            <XAxis 
+                                dataKey="day" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: '#9CA3AF', fontSize: 12}} 
+                                dy={10} 
+                                interval={2} 
+                            />
+                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
+                            <Tooltip cursor={{fill: 'rgba(103, 57, 183, 0.05)'}} content={<DailyTooltip />} />
+                            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                            <Bar name="Income" dataKey="income" fill={THEME.success} radius={[4, 4, 0, 0]} barSize={8} />
+                            <Bar name="Expense" dataKey="expense" fill={THEME.danger} radius={[4, 4, 0, 0]} barSize={8} />
+                        </BarChart>
                     </ResponsiveContainer>
                 )}
               </div>
